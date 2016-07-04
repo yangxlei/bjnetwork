@@ -24,7 +24,7 @@ android {
 
 dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.3.1'
-    compile 'io.github.yangxlei:cache:1.0.0'
+    compile 'io.github.yangxlei:cache:1.3.0'
 }
 
 apply from: 'https://raw.githubusercontent.com/yangxlei/gradle-bintray-upload/master/gradle-bintray-upload.gradle'
