@@ -23,7 +23,7 @@ public interface BJNetCall {
     /**
      * 异步执行请求
      * @param tag 请求所属的 tag. 如果 tag 被 JVM 回收, 会自动关闭对应的请求
-     * @param callback
+     * @param callback {@link BJNetCallback}, {@link BJProgressCallback}, {@link BJDownloadCallback}
      */
     void executeAsync(Object tag, BJNetCallback callback);
 

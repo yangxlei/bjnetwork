@@ -37,7 +37,7 @@ public class BJRequestBody {
     }
 
     /**
-     * 提交一个字符串
+     * 提交一个字符串 (text/x-markdown; charset=utf-8)
      *
      * @param content 字符串
      * @return BJRequestBody
@@ -48,7 +48,7 @@ public class BJRequestBody {
     }
 
     /**
-     * 提交 Json 字符串
+     * 提交 Json 字符串 (application/json; charset=utf-8)
      *
      * @param json 请求参数
      * @return BJRequestBody
@@ -90,7 +90,6 @@ public class BJRequestBody {
         return createWithMultiForm(kv, null, null, null);
     }
 
-
     /**
      * 使用 MultiForm 的方式提交文件 (multipart/form-data)
      *
@@ -106,7 +105,8 @@ public class BJRequestBody {
      *                 </ul>
      * @return BJRequestBody
      */
-    public static BJRequestBody createWithMultiForm(Map<String, String> kv, String fileKey, File file, MediaType fileType) {
+    public static BJRequestBody createWithMultiForm(Map<String, String> kv, String fileKey, File file,
+                                                    MediaType fileType) {
         MultipartBody.Builder builder = new MultipartBody.Builder();
 
         if (kv != null && !kv.isEmpty()) {
@@ -118,10 +118,11 @@ public class BJRequestBody {
             }
         }
 
-        if (!TextUtils.isEmpty(fileKey) && file != null && fileType != null) {
+        if (!TextUtils.isEmpty(fileKey) && file != null) {
             RequestBody body = RequestBody.create(fileType, file);
             builder.addFormDataPart(fileKey, file.getName(), body);
         }
+        builder.setType(MultipartBody.FORM);
 
         BJRequestBody requestBody = new BJRequestBody(builder.build());
         return requestBody;

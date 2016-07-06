@@ -25,4 +25,5 @@ public abstract class BJNetCallback implements Callback {
     public abstract void onFailure(Exception e);
 
     public abstract void onResponse(BJResponse response);
+
 }

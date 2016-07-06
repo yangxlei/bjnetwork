@@ -236,8 +236,6 @@ public class BJWebSocketClient {
                 e.printStackTrace();
 
                 logException(e, "onMessage()");
-
-//                disconnect(ERROR_CODE_CLIENT_EXCEPTION, e.getMessage());
             }
 
         }
@@ -268,6 +266,15 @@ public class BJWebSocketClient {
                 connect();
             } else {
                 if (mListener != null) {
+
+                    if(mSendMessageThread.mMessageQueue.size() > 0) {
+                        BJMessageBody body = mSendMessageThread.mMessageQueue.poll();
+                        while (body != null) {
+                            mListener.onSentMessageFailure(BJWebSocketClient.this, body);
+
+                            body = mSendMessageThread.mMessageQueue.poll();
+                        }
+                    }
                     mListener.onClose(BJWebSocketClient.this);
                 }
             }

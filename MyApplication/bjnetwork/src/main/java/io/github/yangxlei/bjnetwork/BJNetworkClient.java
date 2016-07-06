@@ -1,5 +1,6 @@
 package io.github.yangxlei.bjnetwork;
 
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,8 +34,28 @@ public class BJNetworkClient {
 
     private OkHttpClient mOkHttpClient;
     private DiskCache mCookieCache;
+    private File cacheDir;
+    private boolean enableHttp2x;
+    private boolean enableLog;
+    private int readTimeout;
+    private int writeTimeout;
+    private int connectTimeout;
+    private BJDns dns;
+    private List<Interceptor> mInterceptors;
+    private List<Interceptor> mNetResponseInterceptors;
 
     public BJNetworkClient(Builder builder) {
+
+        this.cacheDir = builder.cacheDir;
+        this.enableHttp2x = builder.enableHttp2x;
+        this.enableLog = builder.enableLog;
+        this.readTimeout = builder.readTimeout;
+        this.writeTimeout = builder.writeTimeout;
+        this.connectTimeout = builder.connectTimeout;
+        this.dns = builder.mDns;
+        this.mInterceptors = builder.mInterceptors;
+        this.mNetResponseInterceptors = builder.mNetResponseInterceptors;
+
         OkHttpClient.Builder httpBuilder = new OkHttpClient.Builder();
 
         buildCache(httpBuilder, builder.cacheDir);
@@ -182,19 +203,37 @@ public class BJNetworkClient {
         }
     }
 
+    public Builder newBuilder() {
+        return new Builder(this);
+    }
+
 
     public static class Builder {
         private boolean enableLog = false;
         private File cacheDir = null;
         private boolean enableHttp2x = false;
-        private Dns mDns = null;
+        private BJDns mDns= null;
         private int readTimeout;
         private int writeTimeout;
         private int connectTimeout;
 
-
         private List<Interceptor> mInterceptors;
         private List<Interceptor> mNetResponseInterceptors;
+
+        public Builder() {
+        }
+
+        public Builder(BJNetworkClient client) {
+            this.enableHttp2x = client.enableHttp2x;
+            this.enableLog = client.enableLog;
+            this.cacheDir = client.cacheDir;
+            this.mDns = client.dns;
+            this.readTimeout = client.readTimeout;
+            this.writeTimeout = client.writeTimeout;
+            this.connectTimeout = client.connectTimeout;
+            this.mInterceptors = client.mInterceptors;
+            this.mNetResponseInterceptors = client.mNetResponseInterceptors;
+        }
 
         /**
          * 是否开启日志

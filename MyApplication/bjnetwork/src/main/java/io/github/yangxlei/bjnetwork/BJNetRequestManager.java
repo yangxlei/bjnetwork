@@ -2,17 +2,21 @@ package io.github.yangxlei.bjnetwork;
 
 import android.text.TextUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.CacheControl;
 import okhttp3.Call;
+import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.internal.Util;
 
 /**
  * Created by yanglei on 16/6/23.
@@ -23,6 +27,7 @@ public class BJNetRequestManager {
         GET("GET"), POST("POST"), DELETE("DELETE"), PUT("PUT");
 
         String method;
+
         HttpMethod(String method) {
             this.method = method;
         }
@@ -34,10 +39,54 @@ public class BJNetRequestManager {
 
     private BJNetworkClient mNetworkClient;
     private BJNetResourceManager mResourceManager;
+    private WeakHashMap<Object, BJProgressCallback> mProgressCallbacks = new WeakHashMap<>();
+
     public BJNetRequestManager(BJNetworkClient client) {
         assert (client != null);
+        this.mNetworkClient = client.newBuilder()
+                // 上传进度监听
+                .addInterceptor(new Interceptor() {
+                    @Override
+                    public Response intercept(Chain chain) throws IOException {
+                        Request request = chain.request();
 
-        this.mNetworkClient = client;
+                        BJProgressCallback callback = mProgressCallbacks.get(request.tag());
+                        if (callback == null) {
+                            return chain.proceed(request);
+                        } else {
+                            if(callback instanceof BJDownloadCallback) {
+                                return chain.proceed(request);
+                            }
+                            if (request.body() != null) {
+                                BJProgressRequestBody requestBody = new BJProgressRequestBody(request.body(), callback);
+                                Request newRequest = request.newBuilder().method(request.method(), requestBody).build();
+                                return chain.proceed(newRequest);
+                            } else {
+                                return chain.proceed(request);
+                            }
+                        }
+                    }
+                })
+                //增加下载进度拦截器
+                .addNetResponseInterceptor(new Interceptor() {
+                    @Override
+                    public Response intercept(Chain chain) throws IOException {
+                        Response originResponse = chain.proceed(chain.request());
+                        BJProgressCallback callback = mProgressCallbacks.get(chain.request().tag());
+                        if (callback == null) {
+                            return originResponse;
+                        }
+                        if (callback instanceof BJDownloadCallback) {
+                            Response response = originResponse.newBuilder()
+                                    .body(new BJProgressResponseBody(originResponse.body(), originResponse.headers(), callback))
+                                    .build();
+                            return response;
+                        } else {
+                            return originResponse;
+                        }
+                    }
+                })
+                .build();
 
         mResourceManager = new BJNetResourceManager();
     }
@@ -48,6 +97,7 @@ public class BJNetRequestManager {
 
     /**
      * GET 请求接口
+     *
      * @param url 请求地址
      * @return {@link BJNetCall}
      */
@@ -57,6 +107,7 @@ public class BJNetRequestManager {
 
     /**
      * GET 请求接口
+     *
      * @param url 请求地址
      * @param headers 自定义请求头
      * @return {@link BJNetCall}
@@ -67,6 +118,7 @@ public class BJNetRequestManager {
 
     /**
      * GET 请求接口
+     *
      * @param url 请求地址
      * @param cacheTime 请求缓存时间, 单位秒. 如果缓存有效, 不会再发起同样的请求,并且在无网情况下返回缓存的响应
      * @return {@link BJNetCall}
@@ -77,6 +129,7 @@ public class BJNetRequestManager {
 
     /**
      * GET 请求接口
+     *
      * @param url 请求地址
      * @param headers 自定义请求头
      * @param cacheTime 请求缓存时间, 单位秒. 如果缓存有效, 不会再发起同样的请求,并且在无网情况下返回缓存的响应
@@ -91,6 +144,7 @@ public class BJNetRequestManager {
 
     /**
      * Post 请求接口
+     *
      * @param url 请求地址
      * @return {@link BJNetCall}
      */
@@ -100,18 +154,41 @@ public class BJNetRequestManager {
 
     /**
      * Post 请求接口
+     *
      * @param url 请求地址
      * @param headers 自定义请求头
      * @return {@link BJNetCall}
      */
     public BJNetCall newPostCall(String url, BJRequestBody requestBody, Map<String, String> headers) {
-        Request request = buildRequest(HttpMethod.POST, requestBody == null ? null : requestBody.getRequestBody(), url, 0, headers);
+        Request request =
+            buildRequest(HttpMethod.POST, requestBody == null ? null : requestBody.getRequestBody(), url, 0,
+                headers);
         Call call = mNetworkClient.newCall(request);
-        return new RealNetCall(mResourceManager, call);
+        return new RealNetCall(mResourceManager, call,null, mProgressCallbacks);
+    }
+
+    /**
+     * 下载文件
+     * @param url
+     * @param storageFileOrDir 下载文件存储位置或目录
+     * @return 下载执行器
+     */
+
+    public BJNetCall newDownloadCall(String url, File storageFileOrDir) {
+
+        File target = storageFileOrDir;
+        if (target.isDirectory()) {
+            target = new File(target, Util.md5Hex(url));
+        }
+
+        Request request = buildRequest(HttpMethod.GET, null, url, 0, null);
+        Call call = mNetworkClient.newCall(request);
+        return new RealNetCall(mResourceManager, call, target, mProgressCallbacks);
     }
 
     /**
      * 构建网络请求
+     *
      * @param method
      * @param requestBody
      * @param url
@@ -119,9 +196,11 @@ public class BJNetRequestManager {
      * @param headers
      * @return
      */
-    protected Request buildRequest(HttpMethod method, RequestBody requestBody, String url, int cacheTimeSeconds, Map<String, String> headers) {
+    protected Request buildRequest(HttpMethod method, RequestBody requestBody, String url, int cacheTimeSeconds,
+        Map<String, String> headers) {
 
-        if (TextUtils.isEmpty(url)) throw new IllegalArgumentException("url is empty!!");
+        if (TextUtils.isEmpty(url))
+            throw new IllegalArgumentException("url is empty!!");
 
         Request.Builder builder = new Request.Builder();
         builder.method(method.getMethod(), requestBody);
@@ -133,7 +212,7 @@ public class BJNetRequestManager {
             builder.cacheControl(cacheControl);
         }
 
-        if(headers != null && !headers.isEmpty()) {
+        if (headers != null && !headers.isEmpty()) {
             Iterator<String> iterator = headers.keySet().iterator();
             while (iterator.hasNext()) {
                 String key = iterator.next();
@@ -141,6 +220,9 @@ public class BJNetRequestManager {
                 builder.addHeader(key, value);
             }
         }
+
+        // 增加一个 tag 对象, 用于和 callback 建立标识.
+        builder.tag(new Object());
 
         return builder.build();
     }
@@ -158,12 +240,22 @@ public class BJNetRequestManager {
         private WeakReference<Call> mWeakCall;
         private Call mCall;
         private BJNetResourceManager mResourceManager;
+        private File mDownloadFile;
+        private Map<Object, BJProgressCallback> mProgressCallbacks;
+
         private RealNetCall(BJNetResourceManager resourceManager, Call call) {
+            this(resourceManager, call, null, null);
+        }
+
+        private RealNetCall(BJNetResourceManager resourceManager, Call call, File downloadFile,
+                            Map<Object, BJProgressCallback> progressCallbacks) {
             // call 本身会被 OkHttpClient 中的队列缓存. 请求完成之后会被清除.
             // 在交付 OKHttpClient 执行之前, 对 call 强引用. 执行之后, 对 Call 弱引用
             mCall = call;
             mWeakCall = new WeakReference<>(call);
             this.mResourceManager = resourceManager;
+            mDownloadFile = downloadFile;
+            mProgressCallbacks = progressCallbacks;
         }
 
         @Override
@@ -193,6 +285,18 @@ public class BJNetRequestManager {
             if (mCall == null) {
                 throw new IllegalStateException("Already executed.");
             }
+            if (callback == null) {
+                throw new NullPointerException("callback is null.");
+            }
+
+            if (callback instanceof BJProgressCallback) {
+                mProgressCallbacks.put(mCall.request().tag(), (BJProgressCallback) callback);
+            }
+
+            if (callback instanceof BJDownloadCallback) {
+                ((BJDownloadCallback)callback).mStorageFile = mDownloadFile;
+            }
+
             mResourceManager.addNetCall(tag, this);
             try {
                 mCall.enqueue(callback);
