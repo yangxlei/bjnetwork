@@ -6,6 +6,7 @@ A network client based OKHttp
 - cache， cookie 缓存处理
 - Http2， Spdy 支持
 - 日志输出开关
+- 上传下载进度
 - RxJava
 - WebSocket 
 - 等等。
@@ -13,12 +14,12 @@ A network client based OKHttp
 详细可跳转至：[OKHttp源码浅析与最佳实践](http://www.jianshu.com/writer#/notebooks/4004039/notes/3667133)
 
 集成方式：
-> compile 'io.github.yangxlei:bjnetwork:1.5.1'
+> compile 'io.github.yangxlei:bjnetwork:1.5.2'
 
 RxJava 扩展:
-> compile 'io.github.yangxlei:rx-bjnetwork:1.5.1'
+> compile 'io.github.yangxlei:rx-bjnetwork:1.5.2'
 
 WebSocket 扩展:
-> compile 'io.github.yangxlei:bjnetwork-ws:1.5.1'
+> compile 'io.github.yangxlei:bjnetwork-ws:1.5.2'
 
 

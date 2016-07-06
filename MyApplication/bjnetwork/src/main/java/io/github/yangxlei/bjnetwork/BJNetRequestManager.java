@@ -139,7 +139,7 @@ public class BJNetRequestManager {
         Request request = buildRequest(HttpMethod.GET, null, url, cacheTime, headers);
         Call call = mNetworkClient.newCall(request);
 
-        return new RealNetCall(mResourceManager, call);
+        return new RealNetCall(mResourceManager, call, null, mProgressCallbacks);
     }
 
     /**
@@ -242,10 +242,6 @@ public class BJNetRequestManager {
         private BJNetResourceManager mResourceManager;
         private File mDownloadFile;
         private Map<Object, BJProgressCallback> mProgressCallbacks;
-
-        private RealNetCall(BJNetResourceManager resourceManager, Call call) {
-            this(resourceManager, call, null, null);
-        }
 
         private RealNetCall(BJNetResourceManager resourceManager, Call call, File downloadFile,
                             Map<Object, BJProgressCallback> progressCallbacks) {
