@@ -13,12 +13,12 @@ A network client based OKHttp
 详细可跳转至：[OKHttp源码浅析与最佳实践](http://www.jianshu.com/writer#/notebooks/4004039/notes/3667133)
 
 集成方式：
-> compile 'io.github.yangxlei:bjnetwork:1.4.1'
+> compile 'io.github.yangxlei:bjnetwork:1.5.0'
 
 RxJava 扩展:
-> compile 'io.github.yangxlei:rx-bjnetwork:1.4.1'
+> compile 'io.github.yangxlei:rx-bjnetwork:1.5.0'
 
 WebSocket 扩展:
-> compile 'io.github.yangxlei:bjnetwork-ws:1.4.1'
+> compile 'io.github.yangxlei:bjnetwork-ws:1.5.0'
 
 
