@@ -135,13 +135,14 @@ public class BJWebSocketClient {
         logInfo(" disconnect("+code+", "+reason+") " +
                 "while environment is (state="+mState+", address="+address+", " +
                 "SendMsgQueueSize="+mSendMessageThread.mMessageQueue.size()+")");
-        if (mState == State.Offline) return;
-
-        setAndNotifyStateChanged(State.Offline);
 
         if (mSendMessageThread != null) {
             mSendMessageThread.interrupt();
         }
+
+        if (mState == State.Offline) return;
+
+        setAndNotifyStateChanged(State.Offline);
 
         try {
             if (mWebSocket != null) {
@@ -262,6 +263,9 @@ public class BJWebSocketClient {
                 // 非用户主动退出
                 if (mListener != null) {
                     mListener.onReconnect(BJWebSocketClient.this);
+                }
+                if (code != ERROR_CODE_CLIENT_EXCEPTION) {
+                    disconnect(code, reason);
                 }
                 connect();
             } else {
