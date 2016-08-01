@@ -4,10 +4,10 @@ package io.github.yangxlei.bjnetwork;
  * Created by yanglei on 16/6/27.
  */
 public class HttpException extends RuntimeException {
-    private final int code;
-    private final String message;
-    private final Exception originException;
-    private final BJResponse mResponse;
+    protected int code;
+    protected String message;
+    protected Exception originException;
+    protected BJResponse mResponse;
 
     public HttpException(Exception e) {
         this.code = -1;

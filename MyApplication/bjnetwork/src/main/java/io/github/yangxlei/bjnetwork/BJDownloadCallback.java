@@ -11,12 +11,12 @@ import okio.Okio;
 /**
  * Created by yanglei on 16/7/5.
  */
-public abstract class BJDownloadCallback extends BJProgressCallback {
+public abstract class BJDownloadCallback extends io.github.yangxlei.bjnetwork.BJProgressCallback {
 
     protected File mStorageFile;
 
     @Override
-    public void onResponse(final BJResponse response) {
+    public void onResponse(final io.github.yangxlei.bjnetwork.BJResponse response) {
 
         BufferedSink sink = null;
         try {
@@ -25,14 +25,14 @@ public abstract class BJDownloadCallback extends BJProgressCallback {
             onDownloadFinish(response, mStorageFile);
         } catch (FileNotFoundException e) {
 //            e.printStackTrace();
-            onFailure(new HttpException(e));
+            onFailure(new io.github.yangxlei.bjnetwork.HttpException(e));
         } catch (IOException e) {
 //            e.printStackTrace();
-            onFailure(new HttpException(e));
+            onFailure(new io.github.yangxlei.bjnetwork.HttpException(e));
         } finally {
             Util.closeQuietly(sink);
         }
     }
 
-    public abstract void onDownloadFinish(BJResponse response, File file);
+    public abstract void onDownloadFinish(io.github.yangxlei.bjnetwork.BJResponse response, File file);
 }

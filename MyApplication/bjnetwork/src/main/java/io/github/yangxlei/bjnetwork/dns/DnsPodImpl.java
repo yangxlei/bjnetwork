@@ -3,6 +3,11 @@ package io.github.yangxlei.bjnetwork.dns;
 import android.text.TextUtils;
 import android.util.Log;
 
+import io.github.yangxlei.bjnetwork.BJNetCall;
+import io.github.yangxlei.bjnetwork.BJNetRequestManager;
+import io.github.yangxlei.bjnetwork.BJNetworkClient;
+import io.github.yangxlei.bjnetwork.BJResponse;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -10,10 +15,6 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 
-import io.github.yangxlei.bjnetwork.BJNetCall;
-import io.github.yangxlei.bjnetwork.BJNetRequestManager;
-import io.github.yangxlei.bjnetwork.BJNetworkClient;
-import io.github.yangxlei.bjnetwork.BJResponse;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;

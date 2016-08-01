@@ -1,9 +1,15 @@
 package io.github.yangxlei.bjnetwork.websocket;
 
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import io.github.yangxlei.bjnetwork.BJNetworkClient;
@@ -65,6 +71,39 @@ public class BJWebSocketClient {
         mClientName = name;
     }
 
+    private ReconnectSignalHandler mReconnectSignalHandler;
+
+    private static class ReconnectSignalHandler extends Handler  {
+        private WeakReference<BJWebSocketClient> mWebSocketClient ;
+
+        private HandlerThread mHandlerThread;
+
+        private ReconnectSignalHandler(BJWebSocketClient client, HandlerThread handlerThread) {
+            super(handlerThread.getLooper());
+            mWebSocketClient = new WeakReference<>(client);
+            mHandlerThread = handlerThread;
+        }
+
+        private void sendReconnectSignal() {
+            if (! mHandlerThread.isAlive()) return;
+            Message message = new Message();
+            message.what = 0;
+            sendMessageDelayed(message, 500);
+        }
+
+        private void quitReconnect() {
+            removeMessages(0);
+            mHandlerThread.quit();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (mWebSocketClient.get() == null) return;
+            BJWebSocketClient client = mWebSocketClient.get();
+            client.connect();
+        }
+    }
+
     public void setClientName(String clientName) {
         mClientName = clientName;
     }
@@ -92,6 +131,10 @@ public class BJWebSocketClient {
         return mState;
     }
 
+    public List<BJMessageBody> getRequestQueue() {
+        return new ArrayList<>(mSendMessageThread.mMessageQueue);
+    }
+
     public void setLogLevel(LogLevel logLevel) {
         assert (logLevel != null);
         mLogLevel = logLevel;
@@ -117,6 +160,12 @@ public class BJWebSocketClient {
             throw new NullPointerException("address is empty!");
         }
 
+        if (mReconnectSignalHandler == null) {
+            HandlerThread handlerThread = new HandlerThread("ReconnectSignalHandlerThread");
+            handlerThread.start();
+            mReconnectSignalHandler = new ReconnectSignalHandler(this, handlerThread);
+        }
+
         setAndNotifyStateChanged(State.Connecting);
 
         Request request = new Request.Builder().url(getAddress())
@@ -131,13 +180,24 @@ public class BJWebSocketClient {
         }
     }
 
-    private void disconnect(int code, String reason) {
+    public void disconnect() {
+        disconnect(ERROR_CODE_CLOSE_BY_USER, "user close ws client.");
+    }
+
+    private synchronized void disconnect(int code, String reason) {
         logInfo(" disconnect("+code+", "+reason+") " +
                 "while environment is (state="+mState+", address="+address+", " +
                 "SendMsgQueueSize="+mSendMessageThread.mMessageQueue.size()+")");
 
         if (mSendMessageThread != null) {
             mSendMessageThread.interrupt();
+        }
+
+        if (code == ERROR_CODE_CLOSE_BY_USER) {
+            if (mReconnectSignalHandler != null) {
+                mReconnectSignalHandler.quitReconnect();
+            }
+            mReconnectSignalHandler = null;
         }
 
         if (mState == State.Offline) return;
@@ -157,7 +217,10 @@ public class BJWebSocketClient {
                     if (mListener != null) {
                         mListener.onReconnect(this);
                     }
-                    connect();
+//                    connect();
+                    if (mReconnectSignalHandler != null) {
+                        mReconnectSignalHandler.sendReconnectSignal();
+                    }
                 }
             }
         } catch (Exception e) {
@@ -171,15 +234,13 @@ public class BJWebSocketClient {
                 if (mListener != null) {
                     mListener.onReconnect(this);
                 }
-                connect();
+//                connect();
+                if (mReconnectSignalHandler != null) {
+                    mReconnectSignalHandler.sendReconnectSignal();
+                }
             }
         }
     }
-
-    public void disconnect() {
-        disconnect(ERROR_CODE_CLOSE_BY_USER, "user close ws client.");
-    }
-
 
     public void sendMessage(String messag) {
         sendMessage(messag, MESSAGE_SEND_RETRY_COUNT);
@@ -267,7 +328,10 @@ public class BJWebSocketClient {
                 if (code != ERROR_CODE_CLIENT_EXCEPTION) {
                     disconnect(code, reason);
                 }
-                connect();
+//                connect();
+                if (mReconnectSignalHandler != null) {
+                    mReconnectSignalHandler.sendReconnectSignal();
+                }
             } else {
                 if (mListener != null) {
 
@@ -337,7 +401,7 @@ public class BJWebSocketClient {
                         RequestBody body = RequestBody.create(WebSocket.TEXT, message.getContent());
                         mWebSocket.sendMessage(body);
                         if (mLogLevel == LogLevel.Info) {
-                            logInfo("sendMessage()  BJMessageBody(" + message.hashCode() + ", " + (message.originRetryCount - message.retryCount) +" retry.");
+                            logInfo("sendMessage()  BJMessageBody(" + message.hashCode() + ", " + (message.originRetryCount - message.retryCount) +" retry)");
                         } else {
                             logData("sendMessage()  BJMessageBody(" + message + ")");
                         }

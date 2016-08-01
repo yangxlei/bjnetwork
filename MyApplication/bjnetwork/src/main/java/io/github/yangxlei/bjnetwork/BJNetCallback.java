@@ -13,7 +13,7 @@ public abstract class BJNetCallback implements Callback {
 
     @Override
     public void onFailure(Call call, IOException e) {
-        onFailure(e);
+        onFailure(new HttpException(e));
     }
 
     @Override
@@ -22,7 +22,7 @@ public abstract class BJNetCallback implements Callback {
         response.close();
     }
 
-    public abstract void onFailure(Exception e);
+    public abstract void onFailure(HttpException e);
 
     public abstract void onResponse(BJResponse response);
 
