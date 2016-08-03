@@ -13,6 +13,9 @@ A network client based OKHttp
 
 详细可跳转至：[OKHttp源码浅析与最佳实践](http://www.jianshu.com/p/64e256c1dbbf)
 
+#V1.6.0 
+修复自动重连时主动关闭失败问题
+
 集成方式：
 > compile 'io.github.yangxlei:bjnetwork:1.6.0'
 
