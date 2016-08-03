@@ -11,7 +11,7 @@ A network client based OKHttp
 - WebSocket 
 - 等等。
 
-详细可跳转至：[OKHttp源码浅析与最佳实践](http://www.jianshu.com/writer#/notebooks/4004039/notes/3667133)
+详细可跳转至：[OKHttp源码浅析与最佳实践](http://www.jianshu.com/p/64e256c1dbbf)
 
 集成方式：
 > compile 'io.github.yangxlei:bjnetwork:1.6.0'
